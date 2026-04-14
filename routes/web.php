@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChildController;
+use App\Http\Controllers\MeasurementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -24,5 +25,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::resource('children', ChildController::class)->middleware(['auth']);
+
+Route::resource('measurements', MeasurementController::class)->middleware(['auth']);
 
 require __DIR__ . '/auth.php';
