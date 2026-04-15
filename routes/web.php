@@ -27,5 +27,6 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::resource('children', ChildController::class)->middleware(['auth']);
 
 Route::resource('measurements', MeasurementController::class)->middleware(['auth']);
+Route::get('/api/measurements/{child_id}', [MeasurementController::class, 'getChartData']);
 
 require __DIR__ . '/auth.php';

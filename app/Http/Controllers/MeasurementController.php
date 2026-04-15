@@ -13,13 +13,17 @@ class MeasurementController extends Controller
      */
     public function index()
     {
-        // Ambil data pengukuran beserta nama anaknya
-        $measurements = Measurement::with('child')->orderBy('measurement_date', 'desc')->get();
-
-        // Ambil daftar anak untuk dropdown di form
+        // 1. Ambil semua anak untuk dropdown
         $children = Child::all();
 
-        return view('measurements.index', compact('measurements', 'children'));
+        // 2. Ambil semua data timbangan, urutkan dari yang terlama ke terbaru agar grafiknya benar
+        $measurements = Measurement::with('child')->orderBy('measurement_date', 'asc')->get();
+
+        // 3. Siapkan data untuk grafik (Label tanggal dan Angka Berat)
+        $labels = $measurements->pluck('measurement_date');
+        $weights = $measurements->pluck('weight');
+
+        return view('measurements.index', compact('children', 'measurements', 'labels', 'weights'));
     }
 
     /**
@@ -77,5 +81,18 @@ class MeasurementController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+    public function getChartData($child_id)
+    {
+        // Mengambil data timbangan berdasarkan ID anak yang dipilih
+        $data = Measurement::where('child_id', $child_id)
+            ->orderBy('measurement_date', 'asc')
+            ->get();
+
+        // Mengembalikan data dalam format JSON agar bisa dibaca JavaScript
+        return response()->json([
+            'labels' => $data->pluck('measurement_date'),
+            'weights' => $data->pluck('weight'),
+        ]);
     }
 }

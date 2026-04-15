@@ -45,6 +45,22 @@
                 </form>
             </div>
 
+            <div class="mb-6 border-t-4 border-blue-500 bg-white p-6 shadow-sm sm:rounded-lg">
+
+                <select class="mb-3 mt-1 block w-full rounded-md border-gray-300 px-4 px-4 py-2 py-2 shadow-sm"
+                    id="child-select" name="child_id">
+                    <option value="">-- Pilih Anak --</option>
+                    @foreach ($children as $child)
+                        <option value="{{ $child->id }}">{{ $child->name }}</option>
+                    @endforeach
+                </select>
+
+                <h3 class="mb-4 text-lg font-bold text-gray-700">Grafik Perkembangan Berat Badan</h3>
+                <div class="relative" style="height: 350px;">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+
             <div class="bg-white p-6 shadow-sm sm:rounded-lg">
                 <table class="min-w-full border">
                     <thead>
@@ -71,3 +87,48 @@
         </div>
     </div>
 </x-app-layout>
+
+<script>
+    let growthChart; // Kita siapkan variabel kosong untuk menyimpan grafik
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        const childSelect = document.getElementById('child-select');
+
+        // 1. Inisialisasi awal (Grafik Kosong)
+        growthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Berat Badan (kg)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    fill: true,
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // 2. Event Listener: Beraksi saat dropdown berubah
+        childSelect.addEventListener('change', function() {
+            const childId = this.value; // Ambil ID anak yang diklik
+            if (!childId) return;
+
+            // 3. Fetch: "Terbang" ke Controller untuk minta data tanpa refresh
+            fetch(`/api/measurements/${childId}`)
+                .then(response => response.json()) // Ubah kiriman PHP tadi jadi objek JS
+                .then(data => {
+                    // 4. Update: Masukkan data baru ke dalam grafik yang sudah ada
+                    growthChart.data.labels = data.labels;
+                    growthChart.data.datasets[0].data = data.weights;
+                    growthChart.update(); // Perintah untuk menggambar ulang grafik
+                });
+        });
+    });
+</script>
