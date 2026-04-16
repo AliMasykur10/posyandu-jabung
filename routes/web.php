@@ -28,5 +28,6 @@ Route::resource('children', ChildController::class)->middleware(['auth']);
 
 Route::resource('measurements', MeasurementController::class)->middleware(['auth']);
 Route::get('/api/measurements/{child_id}', [MeasurementController::class, 'getChartData']);
+Route::post('/measurements/export-pdf', [MeasurementController::class, 'exportPDF'])->name('measurements.pdf');
 
 require __DIR__ . '/auth.php';

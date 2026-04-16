@@ -5,8 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Child;
 use App\Models\Measurement;
-use App\Models\Posyandu; // Pastikan model ini ada
-use App\Models\ParentDetail; // Sesuaikan dengan nama model orang tua kamu
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 

@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Child extends Model
 {
-    protected $fillable = ['name', 
-    'birth_date', 
-    'gender', 
-    'posyandu_id', 
-    'parent_id',    
-    'birth_weight' ];
+    protected $fillable = [
+        'name',
+        'birth_date',
+        'gender',
+        'posyandu_id',
+        'parent_id',
+        'birth_weight'
+    ];
 
     public function posyandu()
     {
@@ -21,5 +23,9 @@ class Child extends Model
     public function parent()
     {
         return $this->belongsTo(ParentDetail::class, 'parent_id');
+    }
+    public function measurements()
+    {
+        return $this->hasMany(Measurement::class);
     }
 }

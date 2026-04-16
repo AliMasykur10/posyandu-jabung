@@ -55,52 +55,40 @@
                     @endforeach
                 </select>
 
-                <h3 class="mb-4 text-lg font-bold text-gray-700">Grafik Perkembangan Berat Badan</h3>
+                <div class="mb-4">
+                    <form action="{{ route('measurements.pdf') }}" id="pdf-form" method="POST" target="_blank">
+                        @csrf
+                        <input id="hidden-child-id" name="child_id" type="hidden">
+                        <input id="chart-image-input" name="chart_image" type="hidden">
+
+                        <button
+                            class="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-200 hover:bg-red-700"
+                            id="btn-cetak-pdf" type="button">
+                            Cetak Laporan (PDF)
+                        </button>
+                    </form>
+                </div>
+
+                <h3 class="mb-4 text-lg font-bold text-gray-700">Grafik Pertumbuhan Berat & Tinggi Badan</h3>
+
                 <div class="relative" style="height: 350px;">
                     <canvas id="growthChart"></canvas>
                 </div>
+
             </div>
 
             <div class="bg-white p-6 shadow-sm sm:rounded-lg">
-                <table class="min-w-full border">
+                <table class="block min-w-full border-collapse md:table">
                     <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border p-2">Tanggal</th>
-                            <th class="border p-2">Nama Anak</th>
-                            <th class="border p-2">Berat (kg)</th>
-                            <th class="border p-2">Tinggi (cm)</th>
-                            <th>Status Gizi</th>
+                        <tr class="border-b bg-gray-100">
+                            <th class="p-2 text-center">Tanggal</th>
+                            <th class="p-2 text-center">Nama</th>
+                            <th class="p-2 text-center">Berat</th>
+                            <th class="p-2 text-center">Tinggi</th>
+                            <th class="p-2 text-center">Status Gizi</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach ($measurements as $m)
-                            <tr class="text-center">
-                                <td class="border p-2">
-                                    {{ \Carbon\Carbon::parse($m->measurement_date)->translatedFormat('d F Y') }}
-                                </td>
-                                <td class="border p-2">{{ $m->child->name }}</td>
-                                <td class="border p-2">{{ $m->weight }}</td>
-                                <td class="border p-2">{{ $m->height }}</td>
-                                <td class="border p-2">
-                                    @if ($m->status == 'Gizi Baik (Normal)')
-                                        <span
-                                            style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 5px; font-weight: bold; display: inline-block;">
-                                            {{ $m->status }}
-                                        </span>
-                                    @elseif($m->status == 'Gizi Kurang')
-                                        <span
-                                            style="background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 5px; font-weight: bold; display: inline-block;">
-                                            {{ $m->status }}
-                                        </span>
-                                    @else
-                                        <span
-                                            style="background-color: #ffc107; color: black; padding: 4px 10px; border-radius: 5px; font-weight: bold; display: inline-block;">
-                                            {{ $m->status ?? 'N/A' }}
-                                        </span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
+                    <tbody id="measurement-table-body">
                     </tbody>
                 </table>
             </div>
@@ -110,46 +98,154 @@
 </x-app-layout>
 
 <script>
-    let growthChart; // Kita siapkan variabel kosong untuk menyimpan grafik
+    let growthChart; // Variabel global untuk grafik
 
     document.addEventListener('DOMContentLoaded', function() {
+        // 1. Inisialisasi Chart (Gunakan ID 'growthChart' sesuai elemen <canvas> kamu)
         const ctx = document.getElementById('growthChart').getContext('2d');
         const childSelect = document.getElementById('child-select');
+        const pdfBtn = document.getElementById('btn-cetak-pdf');
 
-        // 1. Inisialisasi awal (Grafik Kosong)
         growthChart = new Chart(ctx, {
             type: 'line',
-            data: {
+            data: { // Kamu tadi lupa membungkus ini dengan kurung kurawal dan properti 'labels'
                 labels: [],
-                datasets: [{
-                    label: 'Berat Badan (kg)',
-                    data: [],
-                    borderColor: 'rgb(75, 192, 192)',
-                    fill: true,
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    tension: 0.3
-                }]
-            },
+                datasets: [ // Data harus di dalam array 'datasets'
+                    {
+                        label: 'Berat Badan (kg)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        yAxisID: 'y', // Sumbu kiri
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Tinggi Badan (cm)',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        yAxisID: 'y1', // Sumbu kanan
+                        tension: 0.3
+                    }
+                ]
+            }, // Tambahkan koma di sini
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Berat (kg)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Tinggi (cm)'
+                        },
+                        grid: {
+                            drawOnChartArea: false // Agar grid tidak tumpang tindih
+                        }
+                    }
+                }
             }
         });
 
-        // 2. Event Listener: Beraksi saat dropdown berubah
+        // 2. Logika saat Dropdown Berubah (Update Chart & Aktifkan Tombol)
         childSelect.addEventListener('change', function() {
-            const childId = this.value; // Ambil ID anak yang diklik
-            if (!childId) return;
+            const childId = this.value;
 
-            // 3. Fetch: "Terbang" ke Controller untuk minta data tanpa refresh
-            fetch(`/api/measurements/${childId}`)
-                .then(response => response.json()) // Ubah kiriman PHP tadi jadi objek JS
-                .then(data => {
-                    // 4. Update: Masukkan data baru ke dalam grafik yang sudah ada
-                    growthChart.data.labels = data.labels;
-                    growthChart.data.datasets[0].data = data.weights;
-                    growthChart.update(); // Perintah untuk menggambar ulang grafik
-                });
+            if (childId) {
+                // AKTIFKAN TOMBOL PDF
+                pdfBtn.classList.remove('opacity-50', 'pointer-events-none');
+
+                // 1. Ambil data dari server menggunakan fetch
+                fetch(`/api/measurements/${childId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // --- UPDATE GRAFIK ---
+                        growthChart.data.labels = data.labels;
+                        growthChart.data.datasets[0].data = data.weights;
+                        growthChart.data.datasets[1].data = data.heights;
+                        growthChart.update();
+
+                        // --- UPDATE TABEL ---
+                        const tableBody = document.getElementById('measurement-table-body');
+                        tableBody.innerHTML = ''; // Bersihkan isi tabel lama
+
+                        if (data.measurements.length > 0) {
+                            data.measurements.forEach((m) => {
+                                // Tentukan warna badge status gizi
+                                let badgeClass = 'bg-yellow-500';
+                                if (m.status === 'Gizi Baik (Normal)') badgeClass =
+                                    'bg-green-600';
+                                else if (m.status === 'Gizi Kurang') badgeClass =
+                                    'bg-red-600';
+
+                                const row = `
+                            <tr class="bg-white border-b">
+                                <td class="p-2 text-center text-sm md:text-base">${m.formatted_date}</td>
+                                <td class="p-2 text-center text-sm md:text-base">${m.child_name}</td>
+                                <td class="p-2 text-center text-sm md:text-base">${m.weight} kg</td>
+                                <td class="p-2 text-center text-sm md:text-base">${m.height} cm</td>
+                                <td class="p-2 text-center">
+                                    <span class="px-2 py-1 rounded text-white text-[10px] md:text-xs font-bold ${badgeClass}">
+                                        ${m.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                                tableBody.insertAdjacentHTML('beforeend', row);
+                            });
+                        } else {
+                            tableBody.innerHTML =
+                                '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada riwayat timbangan untuk anak ini.</td></tr>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Gagal mengambil data dari server.');
+                    });
+
+            } else {
+                // Nonaktifkan tombol jika tidak ada anak yang dipilih
+                pdfBtn.classList.add('opacity-50', 'pointer-events-none');
+                // Kosongkan tabel dan grafik jika tidak ada pilihan
+                document.getElementById('measurement-table-body').innerHTML = '';
+                growthChart.data.labels = [];
+                growthChart.data.datasets.forEach(ds => ds.data = []);
+                growthChart.update();
+            }
+        });
+
+        // 3. Logika Cetak PDF (Base64)
+        pdfBtn.addEventListener('click', function(e) {
+            // Karena sekarang pakai Form POST, kita tidak butuh href lagi
+            e.preventDefault();
+
+            const childId = childSelect.value;
+            if (!childId) {
+                alert('Silakan pilih nama anak terlebih dahulu!');
+                return;
+            }
+
+            // PERBAIKAN: Gunakan ID 'growthChart' (bukan 'myChart')
+            const chartCanvas = document.getElementById('growthChart');
+
+            // Konversi ke Base64
+            const chartImageBase64 = chartCanvas.toDataURL('image/png');
+
+            // Isi input hidden dan submit form
+            document.getElementById('hidden-child-id').value = childId;
+            document.getElementById('chart-image-input').value = chartImageBase64;
+            document.getElementById('pdf-form').submit();
         });
     });
 </script>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Measurement; // WAJIB: Agar controller bisa akses tabel measurements
 use App\Models\Child;       // WAJIB: Agar controller bisa ambil daftar anak untuk dropdown
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MeasurementController extends Controller
 {
@@ -150,15 +151,44 @@ class MeasurementController extends Controller
     }
     public function getChartData($child_id)
     {
-        // Mengambil data timbangan berdasarkan ID anak yang dipilih
-        $data = Measurement::where('child_id', $child_id)
+        $measurements = Measurement::where('child_id', $child_id)
             ->orderBy('measurement_date', 'asc')
             ->get();
 
-        // Mengembalikan data dalam format JSON agar bisa dibaca JavaScript
         return response()->json([
-            'labels' => $data->pluck('measurement_date'),
-            'weights' => $data->pluck('weight'),
+            'labels'  => $measurements->pluck('measurement_date')->map(fn($d) => \Carbon\Carbon::parse($d)->format('d/m/y')),
+            'weights' => $measurements->pluck('weight'),
+            'heights' => $measurements->pluck('height'),
+            // Tambahkan data lengkap untuk tabel
+            'measurements' => $measurements->map(function ($m) {
+                return [
+                    'formatted_date' => \Carbon\Carbon::parse($m->measurement_date)->translatedFormat('d F Y'),
+                    'child_name' => $m->child->name,
+                    'weight' => $m->weight,
+                    'height' => $m->height,
+                    'status' => $m->status
+                ];
+            })
         ]);
+    }
+    public function exportPDF(Request $request)
+    {
+        $childId = $request->child_id;
+        $chartImage = $request->chart_image; // Ini berisi string Base64
+
+        $child = Child::findOrFail($childId);
+        $measurements = Measurement::where('child_id', $childId)
+            ->orderBy('measurement_date', 'asc')
+            ->get();
+
+        $data = [
+            'child' => $child,
+            'measurements' => $measurements,
+            'chartImage' => $chartImage, // Kirim ke view
+            'date' => now()->format('d/m/Y')
+        ];
+
+        $pdf = Pdf::loadView('measurements.pdf', $data);
+        return $pdf->download('Laporan_' . $child->name . '.pdf');
     }
 }
