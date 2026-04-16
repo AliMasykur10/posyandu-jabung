@@ -13,16 +13,15 @@ return new class extends Migration
     {
         Schema::create('measurements', function (Blueprint $table) {
             $table->id();
-            // Menghubungkan ke tabel children yang sudah kita ubah tadi
+
+            // Menghubungkan ke tabel children
             $table->foreignId('child_id')->constrained()->onDelete('cascade');
-            
-            $table->date('measurement_date'); // tgl_timbang -> measurement_date
-            $table->decimal('weight', 5, 2);  // berat_badan -> weight (kg)
-            $table->decimal('height', 5, 2);  // tinggi_badan -> height (cm)
-            
-            // status_gizi -> nutritional_status
-            $table->string('nutritional_status')->nullable(); 
-            
+
+            $table->decimal('weight', 5, 2); // Berat badan (kg)
+            $table->decimal('height', 5, 2); // Tinggi/Panjang badan (cm)
+            $table->date('measurement_date'); // Tanggal penimbangan
+            $table->text('notes')->nullable(); // Catatan tambahan (misal: imunisasi apa)
+
             $table->timestamps();
         });
     }

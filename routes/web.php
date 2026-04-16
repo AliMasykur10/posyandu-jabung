@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChildController;
+use App\Http\Controllers\MeasurementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -24,5 +25,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::resource('children', ChildController::class)->middleware(['auth']);
+
+Route::resource('measurements', MeasurementController::class)->middleware(['auth']);
+Route::get('/api/measurements/{child_id}', [MeasurementController::class, 'getChartData']);
+Route::post('/measurements/export-pdf', [MeasurementController::class, 'exportPDF'])->name('measurements.pdf');
 
 require __DIR__ . '/auth.php';
