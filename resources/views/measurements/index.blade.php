@@ -47,8 +47,8 @@
 
             <div class="mb-6 border-t-4 border-blue-500 bg-white p-6 shadow-sm sm:rounded-lg">
 
-                <select class="mb-3 mt-1 block w-full rounded-md border-gray-300 px-4 px-4 py-2 py-2 shadow-sm"
-                    id="child-select" name="child_id">
+                <select class="mb-3 mt-1 block w-full rounded-md border-gray-300 px-4 py-2 shadow-sm" id="child-select"
+                    name="child_id">
                     <option value="">-- Pilih Anak --</option>
                     @foreach ($children as $child)
                         <option value="{{ $child->id }}">{{ $child->name }}</option>
@@ -69,15 +69,36 @@
                             <th class="border p-2">Nama Anak</th>
                             <th class="border p-2">Berat (kg)</th>
                             <th class="border p-2">Tinggi (cm)</th>
+                            <th>Status Gizi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($measurements as $m)
                             <tr class="text-center">
-                                <td class="border p-2">{{ $m->measurement_date }}</td>
+                                <td class="border p-2">
+                                    {{ \Carbon\Carbon::parse($m->measurement_date)->translatedFormat('d F Y') }}
+                                </td>
                                 <td class="border p-2">{{ $m->child->name }}</td>
                                 <td class="border p-2">{{ $m->weight }}</td>
                                 <td class="border p-2">{{ $m->height }}</td>
+                                <td class="border p-2">
+                                    @if ($m->status == 'Gizi Baik (Normal)')
+                                        <span
+                                            style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                            {{ $m->status }}
+                                        </span>
+                                    @elseif($m->status == 'Gizi Kurang')
+                                        <span
+                                            style="background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                            {{ $m->status }}
+                                        </span>
+                                    @else
+                                        <span
+                                            style="background-color: #ffc107; color: black; padding: 4px 10px; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                            {{ $m->status ?? 'N/A' }}
+                                        </span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -25,7 +25,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             PosyanduSeeder::class,
-            ParentSeeder::class, // Cukup panggil di sini sekali saja
+            ParentSeeder::class,
+            ChildAndMeasurementSeeder::class, // Cukup panggil di sini sekali saja
         ]);
     }
 }
