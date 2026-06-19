@@ -16,23 +16,33 @@ class ChildAndMeasurementSeeder extends Seeder
     public function run(): void
     {
         // 1. Buat data Posyandu (Gunakan 'name' dan 'address' sesuai migrasi)
-        $posyanduId = DB::table('posyandus')->insertGetId([
-            'name' => 'Posyandu Jabung Sisir',
-            'address' => 'Desa Jabung, Probolinggo',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $posyandu = \App\Models\Posyandu::updateOrCreate(
+            ['name' => 'Posyandu Melati'], // Kunci pencarian
+            [
+                'address' => 'Desa Jabung, Probolinggo',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+        $posyanduId = $posyandu->id;
 
         // 2. Buat data Orang Tua 
         // CATATAN: Pastikan kolom di bawah ini (mother_name, father_name, address) 
         // sudah sesuai dengan file migrasi parent_details kamu!
-        $parentId = DB::table('parent_details')->insertGetId([
-            'mother_name' => 'Siti Aminah',
-            'father_name' => 'Budi Santoso',
-            'address' => 'Desa Jabung RT 01',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $parent = \App\Models\ParentDetail::updateOrCreate(
+            ['no_kk' => '1234567890123456'], // Kunci pencarian
+            [
+                'posyandu_id' => $posyanduId,
+                'mother_name' => 'Siti Aminah',
+                'father_name' => 'Budi Santoso',
+                'address'     => 'Desa Jabung RT 01',
+                'rt'          => '001',
+                'rw'          => '001',
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]
+        );
+        $parentId = $parent->id;
 
         // 3. Buat Data Anak (Gunakan 'birth_date' dan 'birth_weight' sesuai migrasi sebelumnya)
         $ali = Child::create([

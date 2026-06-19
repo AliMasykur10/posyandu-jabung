@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
-            $table->string('role')->default('orangtua'); // admin, kader, kades, puskesmas
+            $table->string('role'); // admin, kader, kades, puskesmas
             $table->foreignId('posyandu_id')->nullable()->constrained(); // Jika dia kader
             $table->timestamps();
         });

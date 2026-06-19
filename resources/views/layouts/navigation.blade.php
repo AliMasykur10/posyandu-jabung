@@ -12,17 +12,28 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+
                     <x-nav-link :active="request()->routeIs('dashboard')" :href="route('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :active="request()->routeIs('children.*')" :href="route('children.index')">
-                        {{ __('Data Balita') }}
-                    </x-nav-link>
 
-                    <x-nav-link :active="request()->routeIs('measurements.*')" :href="route('measurements.index')">
-                        {{ __('Catat Timbangan') }}
-                    </x-nav-link>
+                    @canany(['is-admin', 'is-kader'])
+                        <x-nav-link :active="request()->routeIs('children.*')" :href="route('children.index')">
+                            {{ __('Data Balita') }}
+                        </x-nav-link>
+
+                        <x-nav-link :active="request()->routeIs('measurements.*')" :href="route('measurements.index')">
+                            {{ __('Catat Timbangan') }}
+                        </x-nav-link>
+
+                        <x-nav-link :active="request()->routeIs('parents.*')" :href="route('parents.index')">
+                            {{ __('Orang Tua') }}
+                        </x-nav-link>
+                    @endcanany
+
+
                 </div>
+
             </div>
 
             <!-- Settings Dropdown -->

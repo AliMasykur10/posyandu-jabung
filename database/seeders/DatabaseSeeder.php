@@ -20,11 +20,12 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'role' => 'admin',
         ]);
 
         $this->call([
-            UserSeeder::class,
             PosyanduSeeder::class,
+            UserSeeder::class,
             ParentSeeder::class,
             ChildAndMeasurementSeeder::class, // Cukup panggil di sini sekali saja
         ]);

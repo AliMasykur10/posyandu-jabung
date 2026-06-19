@@ -12,6 +12,7 @@
                 <h3 class="mb-4 text-lg font-bold">Input Hasil Penimbangan</h3>
                 <form action="{{ route('measurements.store') }}" method="POST">
                     @csrf
+
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Pilih Anak</label>
@@ -39,6 +40,47 @@
                                 name="measurement_date" required type="date" value="{{ date('Y-m-d') }}">
                         </div>
                     </div>
+
+                    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Lingkar Kepala (cm)</label>
+                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                name="head_circumference" placeholder="Opsional" step="0.01" type="number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Lingkar Lengan / LiLA (cm)</label>
+                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                name="arm_circumference" placeholder="Opsional" step="0.01" type="number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Vitamin A</label>
+                            <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="vitamin_a">
+                                <option value="">Tidak Diberikan</option>
+                                <option value="Kapsul Biru">Kapsul Biru (6-11 bln)</option>
+                                <option value="Kapsul Merah">Kapsul Merah (12-59 bln)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Obat Cacing</label>
+                            <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                name="deworming_medicine">
+                                <option value="0">Tidak</option>
+                                <option value="1">Ya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Pemberian PMT</label>
+                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="pmt_status"
+                                placeholder="Misal: Biskuit" type="text">
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700">Catatan Tambahan</label>
+                        <textarea class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="notes"
+                            placeholder="Masukkan catatan imunisasi atau keluhan jika ada..." rows="2"></textarea>
+                    </div>
+
                     <button class="mt-4 rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700" type="submit">
                         Simpan Pengukuran
                     </button>
@@ -86,6 +128,11 @@
                             <th class="p-2 text-center">Nama</th>
                             <th class="p-2 text-center">Berat</th>
                             <th class="p-2 text-center">Tinggi</th>
+
+                            <th class="p-2 text-center">L. Kepala</th>
+                            <th class="p-2 text-center">LiLA</th>
+                            <th class="p-2 text-center">Intervensi Tambahan</th>
+
                             <th class="p-2 text-center">Status Gizi</th>
                         </tr>
                     </thead>
@@ -190,14 +237,47 @@
                                 else if (m.status === 'Gizi Kurang') badgeClass =
                                     'bg-red-600';
 
+                                // --- LOGIKA PROGRAM INTERVENSI (Dinamis JavaScript) ---
+                                let intervensiHTML = '<div class="space-y-1 text-xs">';
+                                let hasIntervensi = false;
+
+                                if (m.vitamin_a) {
+                                    intervensiHTML +=
+                                        `<div><span class="font-semibold text-blue-600">Vit:</span> ${m.vitamin_a}</div>`;
+                                    hasIntervensi = true;
+                                }
+                                if (m.deworming_medicine == 1 || m.deworming_medicine ===
+                                    true) {
+                                    intervensiHTML +=
+                                        `<div><span class="font-semibold text-green-600">Obat Cacing:</span> Ya</div>`;
+                                    hasIntervensi = true;
+                                }
+                                if (m.pmt_status) {
+                                    intervensiHTML +=
+                                        `<div><span class="font-semibold text-purple-600">PMT:</span> ${m.pmt_status}</div>`;
+                                    hasIntervensi = true;
+                                }
+
+                                if (!hasIntervensi) {
+                                    intervensiHTML = '-';
+                                } else {
+                                    intervensiHTML += '</div>';
+                                }
+
+                                // --- SUSUN STRING BARIS HTML (9 KOLOM BERPUSAT DI TENGAH) ---
                                 const row = `
-                            <tr class="bg-white border-b">
-                                <td class="p-2 text-center text-sm md:text-base">${m.formatted_date}</td>
+                            <tr class="bg-white border-b text-center">
+                                <td class="p-2 text-sm md:text-base">${m.formatted_date}</td>
                                 <td class="p-2 font-bold text-blue-600">${m.age}</td>
-                                <td class="p-2 text-center text-sm md:text-base">${m.child_name}</td>
-                                <td class="p-2 text-center text-sm md:text-base">${m.weight} kg</td>
-                                <td class="p-2 text-center text-sm md:text-base">${m.height} cm</td>
-                                <td class="p-2 text-center">
+                                <td class="p-2 text-sm md:text-base">${m.child_name}</td>
+                                <td class="p-2 text-sm md:text-base">${m.weight} kg</td>
+                                <td class="p-2 text-sm md:text-base">${m.height} cm</td>
+                                
+                                <td class="p-2 text-sm md:text-base">${m.head_circumference ? m.head_circumference + ' cm' : '-'}</td>
+                                <td class="p-2 text-sm md:text-base">${m.arm_circumference ? m.arm_circumference + ' cm' : '-'}</td>
+                                <td class="p-2">${intervensiHTML}</td>
+                                
+                                <td class="p-2">
                                     <span class="px-2 py-1 rounded text-white text-[10px] md:text-xs font-bold ${badgeClass}">
                                         ${m.status}
                                     </span>
@@ -207,8 +287,9 @@
                                 tableBody.insertAdjacentHTML('beforeend', row);
                             });
                         } else {
+                            // Colspan diubah menjadi 9 agar sesuai lebar tabel baru saat data kosong
                             tableBody.innerHTML =
-                                '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada riwayat timbangan untuk anak ini.</td></tr>';
+                                '<tr><td colspan="9" class="p-4 text-center text-gray-500">Belum ada riwayat timbangan untuk anak ini.</td></tr>';
                         }
                     })
                     .catch(error => {

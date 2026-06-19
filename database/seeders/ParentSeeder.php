@@ -13,10 +13,14 @@ class ParentSeeder extends Seeder
     public function run(): void
     {
         \App\Models\ParentDetail::create([
-        'father_name' => 'Budi Utomo',
-        'mother_name' => 'Siti Aminah',
-        'phone_number'=> '08123456789',
-        'address'     => 'Desa Jabung Sisir RT 01'
-    ]);
+            'posyandu_id'  => 1, // Pastikan ID ini ada di tabel posyandus
+            'no_kk'        => '1234567890123456', // Wajib 16 digit
+            'mother_name'  => 'Siti Aminah',
+            'father_name'  => 'Budi Utomo',
+            'phone_number' => '08123456789',
+            'address'      => 'Desa Jabung Sisir',
+            'rt'           => '001',
+            'rw'           => '002',
+        ]);
     }
 }

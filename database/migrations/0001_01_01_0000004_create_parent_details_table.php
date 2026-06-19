@@ -13,10 +13,27 @@ return new class extends Migration
     {
         Schema::create('parent_details', function (Blueprint $table) {
             $table->id();
-            $table->string('father_name')->nullable();
+
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+
+            // 🔑 MULTI-TENANT: Mengunci data keluarga agar terikat ke salah satu posyandu
+            $table->foreignId('posyandu_id')->constrained('posyandus')->onDelete('cascade');
+
+            // 🔒 VALIDASI IDENTITAS UNIK (Wajib String untuk mencegah angka 0 hilang atau integer overflow)
+            $table->string('no_kk', 16)->unique();
+            $table->string('nik_mother', 16)->nullable(); // Menyesuaikan kebutuhan e-PPGBM Kemenkes
+            $table->string('nik_father', 16)->nullable();
+
+            // DATA UTAMA (Bawaan aslimu)
             $table->string('mother_name');
+            $table->string('father_name')->nullable();
             $table->string('phone_number')->nullable();
+
+            // ELEMEN DOMISILI KEMENKES
             $table->text('address');
+            $table->string('rt', 3);
+            $table->string('rw', 3);
+
             $table->timestamps();
         });
     }
