@@ -82,6 +82,7 @@
                     <thead>
                         <tr class="border-b bg-gray-100">
                             <th class="p-2 text-center">Tanggal</th>
+                            <th class="p-2 text-center">Usia</th>
                             <th class="p-2 text-center">Nama</th>
                             <th class="p-2 text-center">Berat</th>
                             <th class="p-2 text-center">Tinggi</th>
@@ -192,6 +193,7 @@
                                 const row = `
                             <tr class="bg-white border-b">
                                 <td class="p-2 text-center text-sm md:text-base">${m.formatted_date}</td>
+                                <td class="p-2 font-bold text-blue-600">${m.age}</td>
                                 <td class="p-2 text-center text-sm md:text-base">${m.child_name}</td>
                                 <td class="p-2 text-center text-sm md:text-base">${m.weight} kg</td>
                                 <td class="p-2 text-center text-sm md:text-base">${m.height} cm</td>
