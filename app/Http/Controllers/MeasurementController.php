@@ -81,17 +81,8 @@ class MeasurementController extends Controller
         $checkDate = \Carbon\Carbon::parse($request->measurement_date);
         $age = floor($birthDate->diffInMonths($checkDate));
 
-        // 3. LOGIKA SEDERHANA STATUS GIZI (Bawaan Asli Kamu)
-        $status = 'Gizi Baik (Normal)';
-        if (!$status || $status === 'Data Standar Tidak Ditemukan') {
-            // Fallback ke logika sederhana jika database standar kosong
-            $status = 'Gizi Baik (Normal)';
-            if ($age <= 6 && $request->weight < 3.0) {
-                $status = 'Gizi Kurang';
-            } elseif ($request->weight < 2.5) {
-                $status = 'Gizi Buruk';
-            }
-        }
+        // Status memakai satu sumber standar yang sama dengan dashboard.
+        $status = $this->determineStatus($child->gender, $age, (float) $request->weight);
 
         // 4. Simpan Gabungan Data ke Database
         Measurement::create([
@@ -121,16 +112,18 @@ class MeasurementController extends Controller
             ->where('age_month', $age)
             ->first();
 
-        if (!$std) return 'Data Standar Tidak Ditemukan';
+        if (!$std) {
+            return 'Data Standar Tidak Ditemukan';
+        }
 
         if ($weight < $std->min_3sd) {
-            return 'Gizi Buruk (Severely Underweight)';
+            return Measurement::STATUS_SEVERE_UNDERWEIGHT;
         } elseif ($weight < $std->min_2sd) {
-            return 'Gizi Kurang (Underweight)';
+            return Measurement::STATUS_UNDERWEIGHT;
         } elseif ($weight > $std->plus_1sd) {
-            return 'Risiko Berat Badan Lebih';
+            return Measurement::STATUS_OVERWEIGHT_RISK;
         } else {
-            return 'Gizi Baik (Normal)';
+            return Measurement::STATUS_NORMAL;
         }
     }
 
