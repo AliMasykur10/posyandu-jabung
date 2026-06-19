@@ -7,10 +7,8 @@ use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\ParentController;
 use Illuminate\Support\Facades\Route;
 
-// Halaman awal saat website dibuka
-Route::get('/', function () {
-    return view('welcome');
-});
+// Halaman awal langsung menuju login
+Route::redirect('/', '/login');
 
 // Route untuk yang sudah login (Grup Auth)
 Route::middleware(['auth', 'verified'])->group(function () {
