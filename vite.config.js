@@ -8,4 +8,10 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        hmr: process.env.NGROK_URL ? {
+            host: process.env.NGROK_URL,
+            protocol: 'wss',
+        } : {},
+    },
 });
