@@ -32,7 +32,7 @@ class DashboardTest extends TestCase
             ->assertViewHas('totalChildren', 2)
             ->assertViewHas('measuredChildren', 1)
             ->assertViewHas('unmeasuredCount', 1)
-            ->assertViewHas('statusSummary', fn(array $summary) => $summary['normal'] === 0
+            ->assertViewHas('statusSummary', fn (array $summary) => $summary['normalWeight'] === 0
                 && $summary['underweight'] === 1);
     }
 
@@ -61,9 +61,9 @@ class DashboardTest extends TestCase
         $response->assertOk()
             ->assertViewIs('dashboard')
             ->assertViewHas('totalChildren', 1)
-            ->assertViewHas('riskChildren', fn($children) => $children->count() === 1
+            ->assertViewHas('riskChildren', fn ($children) => $children->count() === 1
                 && $children->first()->child_id === $firstChild->id)
-            ->assertViewHas('posyanduComparison', fn($items) => $items->count() === 1
+            ->assertViewHas('posyanduComparison', fn ($items) => $items->count() === 1
                 && $items->first()['id'] === $firstPosyandu->id);
     }
 
@@ -87,7 +87,7 @@ class DashboardTest extends TestCase
 
         $response->assertOk()
             ->assertViewIs('parents.dashboard')
-            ->assertViewHas('childrenData', fn($children) => $children->count() === 1
+            ->assertViewHas('childrenData', fn ($children) => $children->count() === 1
                 && $children->first()['child']->id === $ownChild->id);
     }
 
@@ -118,10 +118,42 @@ class DashboardTest extends TestCase
 
     private function createMeasurement(Child $child, $date, string $status): Measurement
     {
+        [$bbUStatus, $bbTbStatus, $zScore] = match ($status) {
+            Measurement::STATUS_UNDERWEIGHT => [
+                Measurement::BB_U_UNDERWEIGHT,
+                Measurement::BB_TB_WASTED,
+                -2.5,
+            ],
+            Measurement::STATUS_SEVERE_UNDERWEIGHT => [
+                Measurement::BB_U_SEVERELY_UNDERWEIGHT,
+                Measurement::BB_TB_SEVERELY_WASTED,
+                -3.5,
+            ],
+            Measurement::STATUS_OVERWEIGHT_RISK => [
+                Measurement::BB_U_OVERWEIGHT_RISK,
+                Measurement::BB_TB_OVERWEIGHT_RISK,
+                1.5,
+            ],
+            default => [Measurement::BB_U_NORMAL, Measurement::BB_TB_NORMAL, 0.0],
+        };
+
         return Measurement::create([
             'child_id' => $child->id,
             'weight' => 7.2,
             'height' => 68,
+            'measurement_method' => Measurement::METHOD_LENGTH,
+            'age_days' => 240,
+            'standardized_height' => 68,
+            'bmi' => 15.57,
+            'bb_u_zscore' => $zScore,
+            'bb_u_status' => $bbUStatus,
+            'tb_u_zscore' => 0,
+            'tb_u_status' => Measurement::TB_U_NORMAL,
+            'bb_tb_zscore' => $zScore,
+            'bb_tb_status' => $bbTbStatus,
+            'imt_u_zscore' => $zScore,
+            'imt_u_status' => $bbTbStatus,
+            'calculation_version' => config('anthropometry.calculation_version'),
             'measurement_date' => $date->toDateString(),
             'status' => $status,
         ]);

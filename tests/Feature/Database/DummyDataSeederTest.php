@@ -25,7 +25,7 @@ class DummyDataSeederTest extends TestCase
             ['name' => 'Posyandu Kenanga', 'address' => 'Alamat manual Kenanga'],
             ['name' => 'Posyandu Dahlia', 'address' => 'Alamat manual Dahlia'],
             ['name' => 'Posyandu Anggrek', 'address' => 'Alamat manual Anggrek'],
-        ])->map(fn(array $attributes) => Posyandu::create($attributes));
+        ])->map(fn (array $attributes) => Posyandu::create($attributes));
 
         $this->seed(DummyDataSeeder::class);
 
@@ -54,7 +54,7 @@ class DummyDataSeederTest extends TestCase
         $this->assertSame(50, ParentDetail::count());
         $this->assertSame(75, Child::count());
         $this->assertSame(435, Measurement::count());
-        $this->assertSame(26, NutritionStandard::count());
+        $this->assertSame(13366, NutritionStandard::count());
 
         $this->assertSame(1, User::where('role', 'admin')->count());
         $this->assertSame(1, User::where('role', 'bidan')->count());
@@ -70,10 +70,17 @@ class DummyDataSeederTest extends TestCase
         ])->get();
 
         $this->assertSame(60, $measurements->unique('child_id')->count());
-        $this->assertSame(40, $measurements->where('status', Measurement::STATUS_NORMAL)->count());
-        $this->assertSame(10, $measurements->where('status', Measurement::STATUS_UNDERWEIGHT)->count());
-        $this->assertSame(5, $measurements->where('status', Measurement::STATUS_SEVERE_UNDERWEIGHT)->count());
-        $this->assertSame(5, $measurements->where('status', Measurement::STATUS_OVERWEIGHT_RISK)->count());
+        $this->assertSame(40, $measurements->where('bb_tb_status', Measurement::BB_TB_NORMAL)->count());
+        $this->assertSame(10, $measurements->where('bb_tb_status', Measurement::BB_TB_WASTED)->count());
+        $this->assertSame(5, $measurements->where('bb_tb_status', Measurement::BB_TB_SEVERELY_WASTED)->count());
+        $this->assertSame(5, $measurements->where('bb_tb_status', Measurement::BB_TB_OVERWEIGHT_RISK)->count());
+
+        foreach (Posyandu::pluck('id') as $posyanduId) {
+            $this->assertSame(12, $measurements
+                ->filter(fn (Measurement $measurement) => $measurement->child->posyandu_id === $posyanduId)
+                ->unique('child_id')
+                ->count());
+        }
     }
 
     private function assertDataIntegrity(): void
@@ -94,5 +101,10 @@ class DummyDataSeederTest extends TestCase
 
         $this->assertSame(0, $childrenWithWrongPosyandu);
         $this->assertSame(0, $measurementsBeforeBirth);
+        $this->assertSame(0, Measurement::whereNull('calculation_version')->count());
+        $this->assertSame(0, Measurement::whereNull('bb_u_status')->count());
+        $this->assertSame(0, Measurement::whereNull('tb_u_status')->count());
+        $this->assertSame(0, Measurement::whereNull('bb_tb_status')->count());
+        $this->assertSame(0, Measurement::whereNull('imt_u_status')->count());
     }
 }

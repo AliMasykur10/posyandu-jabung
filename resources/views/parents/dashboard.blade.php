@@ -14,16 +14,15 @@
                 @php
                     $child = $data['child'];
                     $latest = $data['latest'];
-                    $status = $data['normalizedStatus'];
                     $years = intdiv($data['ageMonths'], 12);
                     $months = $data['ageMonths'] % 12;
-                    $statusColor = match ($status) {
-                        \App\Models\Measurement::STATUS_NORMAL => 'text-green-700 bg-green-50',
-                        \App\Models\Measurement::STATUS_UNDERWEIGHT => 'text-amber-700 bg-amber-50',
-                        \App\Models\Measurement::STATUS_SEVERE_UNDERWEIGHT => 'text-red-700 bg-red-50',
-                        \App\Models\Measurement::STATUS_OVERWEIGHT_RISK => 'text-blue-700 bg-blue-50',
-                        default => 'text-gray-700 bg-gray-100',
+                    $statusClass = function ($status) {
+                        if (!$status) return 'text-gray-700 bg-gray-100';
+                        if (str_contains($status, 'Buruk') || str_contains($status, 'Sangat') || $status === 'Obesitas') return 'text-red-700 bg-red-50';
+                        if (str_contains($status, 'Kurang') || $status === 'Pendek' || str_contains($status, 'Lebih')) return 'text-amber-700 bg-amber-50';
+                        return 'text-green-700 bg-green-50';
                     };
+                    $priorityStatus = $latest?->priorityStatus();
                 @endphp
 
                 <section class="overflow-hidden border-y border-gray-200 bg-white sm:rounded-lg sm:border sm:shadow-sm">
@@ -32,8 +31,27 @@
                             <h3 class="text-xl font-semibold text-gray-900">{{ $child->name }}</h3>
                             <p class="text-sm text-gray-500">Usia {{ $years > 0 ? $years . ' tahun ' : '' }}{{ $months }} bulan</p>
                         </div>
-                        <span class="w-fit rounded-md px-3 py-1 text-sm font-semibold {{ $statusColor }}">{{ $status ?? 'Belum ada status gizi' }}</span>
+                        <span class="w-fit rounded-md px-3 py-1 text-sm font-semibold {{ $priorityStatus ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700' }}">{{ $priorityStatus ?? ($latest ? 'Tidak ada masalah prioritas' : 'Belum ada pengukuran') }}</span>
                     </div>
+
+                    @if ($latest)
+                        <div class="grid grid-cols-1 border-b border-gray-200 sm:grid-cols-2 lg:grid-cols-4">
+                            @foreach ([
+                                ['BB/U', $latest->bb_u_status, $latest->bb_u_zscore, $latest->bb_u_flagged],
+                                ['TB/U', $latest->tb_u_status, $latest->tb_u_zscore, $latest->tb_u_flagged],
+                                ['BB/TB', $latest->bb_tb_status, $latest->bb_tb_zscore, $latest->bb_tb_flagged],
+                                ['IMT/U', $latest->imt_u_status, $latest->imt_u_zscore, $latest->imt_u_flagged],
+                            ] as [$label, $result, $zScore, $flagged])
+                                <div class="border-b border-gray-200 p-4 last:border-b-0 sm:border-r lg:border-b-0">
+                                    <p class="text-xs font-semibold text-gray-500">{{ $label }}</p>
+                                    <span class="mt-2 inline-block rounded-md px-2 py-1 text-xs font-semibold {{ $flagged ? 'bg-gray-100 text-gray-700' : $statusClass($result) }}">
+                                        {{ $flagged ? 'Perlu verifikasi' : ($result ?? 'Belum dihitung') }}
+                                    </span>
+                                    <p class="mt-1 text-xs text-gray-500">Z-score {{ $zScore ?? '-' }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-2 border-b border-gray-200 sm:grid-cols-4">
                         <div class="border-b border-r border-gray-200 p-4 sm:border-b-0 sm:p-5"><p class="text-xs font-medium uppercase text-gray-500">Timbang Terakhir</p><p class="mt-1 font-semibold text-gray-900">{{ $latest ? \Carbon\Carbon::parse($latest->measurement_date)->translatedFormat('d M Y') : '-' }}</p></div>

@@ -8,6 +8,7 @@ use App\Models\NutritionStandard;
 use App\Models\ParentDetail;
 use App\Models\Posyandu;
 use App\Models\User;
+use App\Services\AnthropometryCalculator;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -68,10 +69,8 @@ class DummyDataSeeder extends Seeder
         $fatherNames = ['Budi', 'Ahmad', 'Agus', 'Hendra', 'Joko', 'Rizal', 'Fajar', 'Wahyu', 'Imam', 'Dedi'];
         $familyNames = ['Santoso', 'Hidayat', 'Pratama', 'Saputra', 'Setiawan'];
         $childNames = ['Alya', 'Raka', 'Nabila', 'Fikri', 'Zahra', 'Rizky', 'Aisyah', 'Farhan', 'Nayla', 'Dimas', 'Salma', 'Arif', 'Hana', 'Ilham', 'Putri'];
-        $ages = [6, 7, 8, 9, 10, 11, 12, 8, 9, 10, 11, 12, 7, 8, 9];
-        $standards = NutritionStandard::all()->keyBy(
-            fn(NutritionStandard $standard) => $standard->gender.'-'.$standard->age_month
-        );
+        $ages = [6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48];
+        $calculator = app(AnthropometryCalculator::class);
         $password = Hash::make(self::DEFAULT_PASSWORD);
         $accountRows = [
             ['Admin', 'admin@gmail.com', self::DEFAULT_PASSWORD],
@@ -140,11 +139,11 @@ class DummyDataSeeder extends Seeder
                     ]);
 
                     for ($monthsAgo = 5; $monthsAgo >= 1; $monthsAgo--) {
-                        $this->createMeasurement($child, $standards, $childIndex, $monthsAgo);
+                        $this->createMeasurement($child, $calculator, $childIndex, $monthsAgo);
                     }
 
                     if ($childIndex <= 12) {
-                        $this->createMeasurement($child, $standards, $childIndex, 0);
+                        $this->createMeasurement($child, $calculator, $childIndex, 0);
                     }
                 }
             }
@@ -157,58 +156,108 @@ class DummyDataSeeder extends Seeder
         return $accountRows;
     }
 
-    private function createMeasurement(Child $child, Collection $standards, int $childIndex, int $monthsAgo): void
-    {
+    private function createMeasurement(
+        Child $child,
+        AnthropometryCalculator $calculator,
+        int $childIndex,
+        int $monthsAgo
+    ): void {
         $measurementDate = $monthsAgo === 0
             ? now()->startOfDay()
             : now()->startOfMonth()->subMonths($monthsAgo)->addDays(9);
-        $birthDate = Carbon::parse($child->birth_date);
-        $ageMonths = max(0, (int) floor($birthDate->diffInMonths($measurementDate)));
-        $standard = $standards->get($child->gender.'-'.$ageMonths);
-
-        if (! $standard) {
-            throw new RuntimeException("Standar gizi {$child->gender} usia {$ageMonths} bulan tidak ditemukan.");
-        }
-
-        $status = $this->statusFor($childIndex, $monthsAgo);
-        $weight = match ($status) {
-            Measurement::STATUS_SEVERE_UNDERWEIGHT => max(1.8, (float) $standard->min_3sd - 0.2),
-            Measurement::STATUS_UNDERWEIGHT => ((float) $standard->min_3sd + (float) $standard->min_2sd) / 2,
-            Measurement::STATUS_OVERWEIGHT_RISK => (float) $standard->plus_1sd + 0.35,
-            default => (float) $standard->median + ((($childIndex % 3) - 1) * 0.05),
+        $ageDays = (int) round(Carbon::parse($child->birth_date)->startOfDay()->diffInDays($measurementDate));
+        $ageMonths = $ageDays / (float) config('anthropometry.days_per_month');
+        $method = $ageDays < 731 ? Measurement::METHOD_LENGTH : Measurement::METHOD_HEIGHT;
+        $heightZScore = match ($childIndex) {
+            7 => -2.5,
+            8 => -3.5,
+            default => 0.0,
         };
-        $isAtRisk = Measurement::isAtRisk($status);
+        $heightStandard = NutritionStandard::where('indicator', NutritionStandard::LENGTH_HEIGHT_FOR_AGE)
+            ->where('gender', $child->gender)
+            ->where('reference_value', $ageDays)
+            ->firstOrFail();
+        $height = $this->valueAtZScore($heightStandard, $heightZScore);
+        $weightIndicator = $ageDays < 731
+            ? NutritionStandard::WEIGHT_FOR_LENGTH
+            : NutritionStandard::WEIGHT_FOR_HEIGHT;
+        $weightTargetZScore = $this->weightTargetZScore($childIndex, $monthsAgo);
+        $weightStandard = $this->interpolatedStandard($weightIndicator, $child->gender, $height);
+        $weight = $this->valueAtZScore($weightStandard, $weightTargetZScore);
+        $anthropometry = $calculator->calculate(
+            $child,
+            round($weight, 2),
+            round($height, 2),
+            $method,
+            $measurementDate
+        );
+        $isAtRisk = in_array($anthropometry['bb_tb_status'], [
+            Measurement::BB_TB_SEVERELY_WASTED,
+            Measurement::BB_TB_WASTED,
+        ], true);
 
-        Measurement::create([
+        Measurement::create(array_merge($anthropometry, [
             'child_id' => $child->id,
             'weight' => round($weight, 2),
-            'height' => round(($child->gender === 'L' ? 50 : 49) + ($ageMonths * 2.25) + (($childIndex % 3) * 0.2), 2),
-            'head_circumference' => round(34 + ($ageMonths * 0.55) + (($childIndex % 2) * 0.2), 2),
-            'arm_circumference' => round(10.5 + ($ageMonths * 0.22) - ($isAtRisk ? 0.5 : 0), 2),
+            'height' => round($height, 2),
+            'head_circumference' => round(34 + (($ageDays / 30.4375) * 0.3) + (($childIndex % 2) * 0.2), 2),
+            'arm_circumference' => round(11 + (($ageDays / 30.4375) * 0.08) - ($isAtRisk ? 0.5 : 0), 2),
             'vitamin_a' => $ageMonths >= 6 ? ($ageMonths >= 12 ? 'Merah' : 'Biru') : null,
             'deworming_medicine' => $ageMonths >= 12,
             'pmt_status' => $isAtRisk || $childIndex % 4 === 0 ? 'Diberikan' : 'Belum diberikan',
-            'status' => $status,
+            'status' => $anthropometry['bb_tb_status'],
             'measurement_date' => $measurementDate,
             'notes' => $isAtRisk
                 ? 'Perlu pemantauan pertumbuhan dan konsultasi dengan bidan.'
                 : 'Pertumbuhan dipantau sesuai jadwal Posyandu.',
-        ]);
+        ]));
     }
 
-    private function statusFor(int $childIndex, int $monthsAgo): string
+    private function weightTargetZScore(int $childIndex, int $monthsAgo): float
     {
         if ($childIndex <= 8 || $childIndex >= 13) {
-            return Measurement::STATUS_NORMAL;
+            return 0;
         }
 
         return match ($childIndex) {
-            9 => $monthsAgo >= 2 ? Measurement::STATUS_NORMAL : Measurement::STATUS_UNDERWEIGHT,
-            10 => Measurement::STATUS_UNDERWEIGHT,
-            11 => $monthsAgo >= 2 ? Measurement::STATUS_UNDERWEIGHT : Measurement::STATUS_SEVERE_UNDERWEIGHT,
-            12 => $monthsAgo >= 3 ? Measurement::STATUS_NORMAL : Measurement::STATUS_OVERWEIGHT_RISK,
-            default => Measurement::STATUS_NORMAL,
+            9 => $monthsAgo >= 2 ? 0 : -2.5,
+            10 => -2.5,
+            11 => $monthsAgo >= 2 ? -2.5 : -3.5,
+            12 => $monthsAgo >= 3 ? 0 : 1.5,
+            default => 0,
         };
+    }
+
+    private function interpolatedStandard(string $indicator, string $gender, float $reference): object
+    {
+        $lower = floor($reference * 10) / 10;
+        $upper = ceil($reference * 10) / 10;
+        $lowerStandard = NutritionStandard::where('indicator', $indicator)
+            ->where('gender', $gender)
+            ->where('reference_value', $lower)
+            ->firstOrFail();
+        $upperStandard = NutritionStandard::where('indicator', $indicator)
+            ->where('gender', $gender)
+            ->where('reference_value', $upper)
+            ->firstOrFail();
+        $ratio = $upper === $lower ? 0 : ($reference - $lower) / ($upper - $lower);
+
+        return (object) [
+            'l' => $lowerStandard->l + ($ratio * ($upperStandard->l - $lowerStandard->l)),
+            'm' => $lowerStandard->m + ($ratio * ($upperStandard->m - $lowerStandard->m)),
+            's' => $lowerStandard->s + ($ratio * ($upperStandard->s - $lowerStandard->s)),
+        ];
+    }
+
+    private function valueAtZScore(object $standard, float $zScore): float
+    {
+        $l = (float) $standard->l;
+        $m = (float) $standard->m;
+        $s = (float) $standard->s;
+
+        return abs($l) < 0.0000001
+            ? $m * exp($s * $zScore)
+            : $m * ((1 + ($l * $s * $zScore)) ** (1 / $l));
     }
 
     private function showSummary(array $accountRows): void

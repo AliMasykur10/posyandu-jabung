@@ -10,36 +10,58 @@
 
             <div class="mb-6 border-l-4 border-green-500 bg-white p-6 shadow-sm sm:rounded-lg">
                 <h3 class="mb-4 text-lg font-bold">Input Hasil Penimbangan</h3>
+                @if ($errors->any())
+                    <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        <ul class="list-disc space-y-1 ps-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 <form action="{{ route('measurements.store') }}" method="POST">
                     @csrf
 
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Pilih Anak</label>
                             <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="child_id"
                                 required>
                                 <option value="">-- Nama Anak --</option>
                                 @foreach ($children as $child)
-                                    <option value="{{ $child->id }}">{{ $child->name }}</option>
+                                    <option value="{{ $child->id }}" @selected(old('child_id') == $child->id)>{{ $child->name }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Berat Badan (kg)</label>
-                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="weight"
-                                required step="0.01" type="number">
+                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" max="58" min="0.9"
+                                name="weight" required step="0.01" type="number" value="{{ old('weight') }}">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Tinggi Badan (cm)</label>
-                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="height"
-                                required step="0.01" type="number">
+                            <label class="block text-sm font-medium text-gray-700">Panjang / Tinggi (cm)</label>
+                            <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" max="150" min="38"
+                                name="height" required step="0.01" type="number" value="{{ old('height') }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Metode Pengukuran</label>
+                            <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                name="measurement_method" required>
+                                <option value="length" @selected(old('measurement_method') === 'length')>Panjang badan terlentang</option>
+                                <option value="height" @selected(old('measurement_method') === 'height')>Tinggi badan berdiri</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tanggal Timbang</label>
                             <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                name="measurement_date" required type="date" value="{{ date('Y-m-d') }}">
+                                max="{{ date('Y-m-d') }}" name="measurement_date" required type="date"
+                                value="{{ old('measurement_date', date('Y-m-d')) }}">
                         </div>
                     </div>
+
+                    <p class="mt-3 text-xs text-gray-500">
+                        Anak di bawah 24 bulan dianjurkan diukur terlentang. Sistem menerapkan koreksi 0,7 cm bila metode berbeda dengan standar usia.
+                    </p>
 
                     <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-5">
                         <div>
@@ -133,7 +155,7 @@
                             <th class="p-2 text-center">LiLA</th>
                             <th class="p-2 text-center">Intervensi Tambahan</th>
 
-                            <th class="p-2 text-center">Status Gizi</th>
+                            <th class="min-w-64 p-2 text-left">Hasil Antropometri</th>
                         </tr>
                     </thead>
                     <tbody id="measurement-table-body">
@@ -230,12 +252,27 @@
 
                         if (data.measurements.length > 0) {
                             data.measurements.forEach((m) => {
-                                // Tentukan warna badge status gizi
-                                let badgeClass = 'bg-yellow-500';
-                                if (m.status === 'Gizi Baik (Normal)') badgeClass =
-                                    'bg-green-600';
-                                else if (m.status === 'Gizi Kurang') badgeClass =
-                                    'bg-red-600';
+                                const statusClass = (status, flagged) => {
+                                    if (flagged) return 'bg-gray-700';
+                                    if (!status) return 'bg-gray-500';
+                                    if (status.includes('Buruk') || status.includes('Sangat') || status.includes('Obesitas')) return 'bg-red-700';
+                                    if (status.includes('Kurang') || status === 'Pendek' || status.includes('Lebih')) return 'bg-amber-600';
+                                    return 'bg-green-700';
+                                };
+                                const statusItem = (label, status, zscore, flagged) => `
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        <span class="font-semibold text-gray-600">${label}:</span>
+                                        <span class="rounded px-2 py-0.5 text-[10px] font-bold text-white ${statusClass(status, flagged)}">
+                                            ${flagged ? 'Perlu verifikasi' : (status || 'Belum dihitung')}
+                                        </span>
+                                        <span class="text-[10px] text-gray-500">${zscore !== null ? 'Z ' + zscore : ''}</span>
+                                    </div>`;
+                                const anthropometryHTML = `<div class="space-y-1 text-left">
+                                    ${statusItem('BB/U', m.bb_u_status, m.bb_u_zscore, m.bb_u_flagged)}
+                                    ${statusItem('TB/U', m.tb_u_status, m.tb_u_zscore, m.tb_u_flagged)}
+                                    ${statusItem('BB/TB', m.bb_tb_status, m.bb_tb_zscore, m.bb_tb_flagged)}
+                                    ${statusItem('IMT/U', m.imt_u_status, m.imt_u_zscore, m.imt_u_flagged)}
+                                </div>`;
 
                                 // --- LOGIKA PROGRAM INTERVENSI (Dinamis JavaScript) ---
                                 let intervensiHTML = '<div class="space-y-1 text-xs">';
@@ -277,11 +314,7 @@
                                 <td class="p-2 text-sm md:text-base">${m.arm_circumference ? m.arm_circumference + ' cm' : '-'}</td>
                                 <td class="p-2">${intervensiHTML}</td>
                                 
-                                <td class="p-2">
-                                    <span class="px-2 py-1 rounded text-white text-[10px] md:text-xs font-bold ${badgeClass}">
-                                        ${m.status}
-                                    </span>
-                                </td>
+                                <td class="p-2">${anthropometryHTML}</td>
                             </tr>
                         `;
                                 tableBody.insertAdjacentHTML('beforeend', row);

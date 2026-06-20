@@ -33,8 +33,8 @@
                         $cards = [
                             ['label' => 'Balita Terdaftar', 'value' => $totalChildren, 'color' => 'text-gray-900'],
                             ['label' => 'Ditimbang Bulan Ini', 'value' => $measuredChildren, 'color' => 'text-green-700'],
-                            ['label' => 'Gizi Kurang / Buruk', 'value' => $statusSummary['underweight'] + $statusSummary['severeUnderweight'], 'color' => 'text-red-700'],
-                            ['label' => 'Risiko Berat Lebih', 'value' => $statusSummary['overweightRisk'], 'color' => 'text-blue-700'],
+                            ['label' => 'Masalah Pertumbuhan', 'value' => $riskChildren->count(), 'color' => 'text-red-700'],
+                            ['label' => 'Gizi Lebih / Obesitas', 'value' => $statusSummary['overweight'] + $statusSummary['obese'], 'color' => 'text-blue-700'],
                         ];
                     @endphp
                 @endif
@@ -57,8 +57,8 @@
 
             <section class="grid grid-cols-1 gap-6 px-4 sm:px-0 lg:grid-cols-5">
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
-                    <h3 class="font-semibold text-gray-900">Distribusi Status Gizi</h3>
-                    <p class="mb-4 text-sm text-gray-500">Satu pengukuran terbaru per balita</p>
+                    <h3 class="font-semibold text-gray-900">Masalah Antropometri</h3>
+                    <p class="mb-4 text-sm text-gray-500">BB kurang, stunting, wasting, dan gizi lebih</p>
                     <div class="mx-auto h-72 max-w-sm"><canvas id="statusChart"></canvas></div>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm lg:col-span-3">
@@ -87,13 +87,13 @@
             @endunless
 
             <section class="overflow-hidden border-y border-gray-200 bg-white sm:rounded-lg sm:border">
-                <div class="border-b border-gray-200 px-4 py-4 sm:px-6"><h3 class="font-semibold text-gray-900">Balita Perlu Perhatian</h3><p class="text-sm text-gray-500">Gizi kurang atau buruk pada pengukuran terakhir bulan ini</p></div>
+                <div class="border-b border-gray-200 px-4 py-4 sm:px-6"><h3 class="font-semibold text-gray-900">Balita Perlu Perhatian</h3><p class="text-sm text-gray-500">BB kurang, stunting, atau wasting pada pengukuran terakhir bulan ini</p></div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500"><tr><th class="px-6 py-3">Balita</th><th class="px-6 py-3">Posyandu</th><th class="px-6 py-3">Pengukuran</th><th class="px-6 py-3">Status</th></tr></thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse ($riskChildren as $measurement)
-                                <tr><td class="px-6 py-4"><a class="font-medium text-blue-700 hover:underline" href="{{ route('children.show', $measurement->child) }}">{{ $measurement->child->name }}</a><p class="text-xs text-gray-500">Ibu {{ $measurement->child->parent?->mother_name ?? '-' }}</p></td><td class="px-6 py-4 text-gray-600">{{ $measurement->child->posyandu?->name ?? '-' }}</td><td class="whitespace-nowrap px-6 py-4 text-gray-600">{{ \Carbon\Carbon::parse($measurement->measurement_date)->translatedFormat('d M Y') }}</td><td class="px-6 py-4 font-semibold {{ \App\Models\Measurement::normalizeStatus($measurement->status) === \App\Models\Measurement::STATUS_SEVERE_UNDERWEIGHT ? 'text-red-700' : 'text-amber-700' }}">{{ \App\Models\Measurement::normalizeStatus($measurement->status) }}</td></tr>
+                                <tr><td class="px-6 py-4"><a class="font-medium text-blue-700 hover:underline" href="{{ route('children.show', $measurement->child) }}">{{ $measurement->child->name }}</a><p class="text-xs text-gray-500">Ibu {{ $measurement->child->parent?->mother_name ?? '-' }}</p></td><td class="px-6 py-4 text-gray-600">{{ $measurement->child->posyandu?->name ?? '-' }}</td><td class="whitespace-nowrap px-6 py-4 text-gray-600">{{ \Carbon\Carbon::parse($measurement->measurement_date)->translatedFormat('d M Y') }}</td><td class="px-6 py-4 font-semibold text-red-700">{{ $measurement->priorityStatus() }}</td></tr>
                             @empty
                                 <tr><td class="px-6 py-8 text-center text-gray-500" colspan="4">Tidak ada balita berstatus gizi kurang atau buruk bulan ini.</td></tr>
                             @endforelse
@@ -118,7 +118,7 @@
                         <div class="border-b border-gray-200 px-5 py-4"><h3 class="font-semibold text-gray-900">Pencatatan Terbaru</h3></div>
                         <ul class="divide-y divide-gray-100">
                             @forelse ($recentMeasurements as $measurement)
-                                <li class="flex items-center justify-between gap-4 px-5 py-3"><div><p class="font-medium text-gray-900">{{ $measurement->child->name }}</p><p class="text-xs text-gray-500">{{ $measurement->weight }} kg / {{ $measurement->height }} cm</p></div><div class="text-right"><p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($measurement->measurement_date)->format('d/m/Y') }}</p><p class="text-xs font-medium text-gray-700">{{ \App\Models\Measurement::normalizeStatus($measurement->status) ?? 'Belum terklasifikasi' }}</p></div></li>
+                                <li class="flex items-center justify-between gap-4 px-5 py-3"><div><p class="font-medium text-gray-900">{{ $measurement->child->name }}</p><p class="text-xs text-gray-500">{{ $measurement->weight }} kg / {{ $measurement->height }} cm</p></div><div class="text-right"><p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($measurement->measurement_date)->format('d/m/Y') }}</p><p class="text-xs font-medium text-gray-700">{{ $measurement->priorityStatus() ?? $measurement->bb_tb_status ?? 'Belum dihitung' }}</p></div></li>
                             @empty
                                 <li class="px-5 py-8 text-center text-sm text-gray-500">Belum ada pencatatan.</li>
                             @endforelse
@@ -132,17 +132,22 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             new Chart(document.getElementById('statusChart'), {
-                type: 'doughnut',
-                data: { labels: ['Gizi Baik', 'Gizi Kurang', 'Gizi Buruk', 'Risiko Berat Lebih', 'Belum Terklasifikasi'], datasets: [{ data: @json(array_values($statusSummary)), backgroundColor: ['#16a34a', '#d97706', '#dc2626', '#2563eb', '#9ca3af'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                type: 'bar',
+                data: { labels: ['BB Kurang', 'Stunting', 'Wasting', 'Gizi Lebih'], datasets: [{ label: 'Jumlah balita', data: [
+                    {{ $statusSummary['underweight'] + $statusSummary['severeUnderweight'] }},
+                    {{ $statusSummary['stunted'] + $statusSummary['severeStunted'] }},
+                    {{ $statusSummary['wasted'] + $statusSummary['severeWasted'] }},
+                    {{ $statusSummary['nutritionOverRisk'] + $statusSummary['overweight'] + $statusSummary['obese'] }}
+                ], backgroundColor: ['#d97706', '#dc2626', '#991b1b', '#2563eb'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
             });
             new Chart(document.getElementById('trendChart'), {
                 type: 'line',
                 data: { labels: @json($trend['labels']), datasets: [
-                    { label: 'Gizi Baik', data: @json($trend['normal']), borderColor: '#16a34a', backgroundColor: '#16a34a', tension: 0.25 },
-                    { label: 'Gizi Kurang', data: @json($trend['underweight']), borderColor: '#d97706', backgroundColor: '#d97706', tension: 0.25 },
-                    { label: 'Gizi Buruk', data: @json($trend['severeUnderweight']), borderColor: '#dc2626', backgroundColor: '#dc2626', tension: 0.25 },
-                    { label: 'Risiko Berat Lebih', data: @json($trend['overweightRisk']), borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.25 }
+                    { label: 'BB Kurang', data: @json($trend['underweight']), borderColor: '#d97706', backgroundColor: '#d97706', tension: 0.25 },
+                    { label: 'Stunting', data: @json($trend['stunting']), borderColor: '#dc2626', backgroundColor: '#dc2626', tension: 0.25 },
+                    { label: 'Wasting', data: @json($trend['wasting']), borderColor: '#991b1b', backgroundColor: '#991b1b', tension: 0.25 },
+                    { label: 'Gizi Lebih', data: @json($trend['overweight']), borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.25 }
                 ] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
             });

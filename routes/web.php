@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChildController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\ParentController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman awal langsung menuju login
@@ -26,7 +26,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('children', ChildController::class)->except('show');
         Route::resource('measurements', MeasurementController::class);
         Route::get('/api/measurements/{child_id}', [MeasurementController::class, 'getChartData']);
-        Route::get('/measurements/pdf', [MeasurementController::class, 'generatePdf'])->name('measurements.pdf');
         Route::post('/measurements/pdf', [MeasurementController::class, 'exportPDF'])->name('measurements.pdf');
         Route::get('/parents', [ParentController::class, 'index'])->name('parents.index');
         Route::post('/parents', [ParentController::class, 'store'])->name('parents.store');
@@ -48,4 +47,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

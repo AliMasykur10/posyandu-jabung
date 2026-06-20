@@ -122,7 +122,7 @@
                 <th>L. Kepala</th>
                 <th>LiLA</th>
                 <th>Intervensi Tambahan</th>
-                <th>Status Gizi</th>
+                <th>Hasil Antropometri</th>
             </tr>
         </thead>
         <tbody>
@@ -165,7 +165,12 @@
                         </ul>
                     </td>
 
-                    <td style="font-weight: bold;">{{ $m->status ?? '-' }}</td>
+                    <td style="font-size: 9px; text-align: left;">
+                        <div><strong>BB/U:</strong> {{ $m->bb_u_status ?? 'Belum dihitung' }} (Z {{ $m->bb_u_zscore ?? '-' }})</div>
+                        <div><strong>TB/U:</strong> {{ $m->tb_u_status ?? 'Belum dihitung' }} (Z {{ $m->tb_u_zscore ?? '-' }})</div>
+                        <div><strong>BB/TB:</strong> {{ $m->bb_tb_status ?? 'Belum dihitung' }} (Z {{ $m->bb_tb_zscore ?? '-' }})</div>
+                        <div><strong>IMT/U:</strong> {{ $m->imt_u_status ?? 'Belum dihitung' }} (Z {{ $m->imt_u_zscore ?? '-' }})</div>
+                    </td>
                 </tr>
             @endforeach
         </tbody>
