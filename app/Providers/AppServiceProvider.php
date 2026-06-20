@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
+
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // 1. Admin: Memiliki akses penuh ke sistem
+        Gate::define('is-admin', fn(User $user) => $user->role === 'admin');
+
+        // 2. Kader: Akses operasional posyandu
+        Gate::define('is-kader', fn(User $user) => $user->role === 'kader');
+
+        // 3. Orang Tua: Akses data anak sendiri
+        Gate::define('is-parent', fn(User $user) => $user->role === 'orangtua');
+
+        // 4. Bidan/Puskesmas: Akses laporan dan monitoring
+        Gate::define('is-bidan', fn(User $user) => $user->role === 'bidan');
+        Gate::define('is-nakes', fn(User $user) => $user->role === 'bidan');
     }
+
+
 }

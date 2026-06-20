@@ -32,13 +32,26 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Lokasi Posyandu</label>
-                            <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" name="posyandu_id"
-                                required>
-                                <option value="">-- Pilih Posyandu --</option>
-                                @foreach ($posyandus as $posyandu)
-                                    <option value="{{ $posyandu->id }}">{{ $posyandu->name }}</option>
-                                @endforeach
-                            </select>
+
+                            @if (auth()->user()->role === 'admin')
+                                <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    name="posyandu_id" required>
+
+                                    <option value="">-- Pilih Posyandu --</option>
+
+                                    @foreach ($posyandus as $posyandu)
+                                        <option value="{{ $posyandu->id }}">
+                                            {{ $posyandu->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            @else
+                                <input name="posyandu_id" type="hidden" value="{{ auth()->user()->posyandu_id }}">
+
+                                <input class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100" readonly
+                                    type="text" value="{{ auth()->user()->posyandu->name }}">
+                            @endif
                         </div>
 
                         <div>

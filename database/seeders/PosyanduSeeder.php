@@ -22,7 +22,10 @@ class PosyanduSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            Posyandu::create($item);
+            Posyandu::firstOrCreate(
+                ['name' => $item['name']],
+                ['address' => $item['address']]
+            );
         }
     }
 }
