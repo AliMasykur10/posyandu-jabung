@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -46,16 +45,20 @@ class NutritionStandardSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            DB::table('nutrition_standards')->insert([
-                'gender' => $item[0],
-                'age_month' => $item[1],
-                'min_3sd' => $item[2],
-                'min_2sd' => $item[3],
-                'median' => $item[4],
-                'plus_1sd' => $item[5],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('nutrition_standards')->updateOrInsert(
+                [
+                    'gender' => $item[0],
+                    'age_month' => $item[1],
+                ],
+                [
+                    'min_3sd' => $item[2],
+                    'min_2sd' => $item[3],
+                    'median' => $item[4],
+                    'plus_1sd' => $item[5],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
     }
 }
