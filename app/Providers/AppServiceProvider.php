@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,7 +35,9 @@ class AppServiceProvider extends ServiceProvider
         // 4. Bidan/Puskesmas: Akses laporan dan monitoring
         Gate::define('is-bidan', fn(User $user) => $user->role === 'bidan');
         Gate::define('is-nakes', fn(User $user) => $user->role === 'bidan');
+
+        if (! $this->app->runningInConsole() && str_contains(request()->getHost(), 'ngrok-free.dev')) {
+            URL::forceScheme('https');
+        }
     }
-
-
 }

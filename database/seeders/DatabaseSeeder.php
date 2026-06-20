@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             PosyanduSeeder::class,
             NutritionStandardSeeder::class,
             UserSeeder::class,
+            DummyDataSeeder::class,
         ]);
     }
 }
