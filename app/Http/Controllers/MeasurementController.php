@@ -6,6 +6,7 @@ use App\Models\Child;       // WAJIB: Agar controller bisa ambil daftar anak unt
 use App\Models\Measurement; // WAJIB: Agar controller bisa akses tabel measurements
 use App\Models\NutritionStandard;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -55,16 +56,16 @@ class MeasurementController extends Controller
     {
         // 1. Validasi Input Form (Bawaan + Data Baru Tambahan)
         $request->validate([
-            'child_id'           => 'required|exists:children,id',
-            'weight'             => 'required|numeric|min:0',
-            'height'             => 'required|numeric|min:0',
-            'measurement_date'   => 'required|date',
+            'child_id' => 'required|exists:children,id',
+            'weight' => 'required|numeric|min:0',
+            'height' => 'required|numeric|min:0',
+            'measurement_date' => 'required|date',
             'head_circumference' => 'nullable|numeric|min:0', // Baru
-            'arm_circumference'  => 'nullable|numeric|min:0',  // Baru
-            'vitamin_a'          => 'nullable|string',         // Baru
+            'arm_circumference' => 'nullable|numeric|min:0',  // Baru
+            'vitamin_a' => 'nullable|string',         // Baru
             'deworming_medicine' => 'required|boolean',        // Baru
-            'pmt_status'         => 'nullable|string|max:255', // Baru
-            'notes'              => 'nullable|string',         // Baru
+            'pmt_status' => 'nullable|string|max:255', // Baru
+            'notes' => 'nullable|string',         // Baru
         ]);
 
         // 2. Ambil Data Anak untuk Menghitung Umur (Bawaan Asli Kamu)
@@ -76,29 +77,29 @@ class MeasurementController extends Controller
                 ->withInput();
         }
 
-        // Hitung Umur untuk Logika Status Gizi (Bawaan Asli Kamu)
-        $birthDate = \Carbon\Carbon::parse($child->birth_date);
-        $checkDate = \Carbon\Carbon::parse($request->measurement_date);
+        // Hitung umur untuk menentukan status berat badan menurut umur (BB/U).
+        $birthDate = Carbon::parse($child->birth_date);
+        $checkDate = Carbon::parse($request->measurement_date);
         $age = floor($birthDate->diffInMonths($checkDate));
 
-        // Status memakai satu sumber standar yang sama dengan dashboard.
+        // Status BB/U memakai satu sumber standar yang sama dengan dashboard.
         $status = $this->determineStatus($child->gender, $age, (float) $request->weight);
 
         // 4. Simpan Gabungan Data ke Database
         Measurement::create([
-            'child_id'           => $request->child_id,
-            'weight'             => $request->weight,
-            'height'             => $request->height,
-            'measurement_date'   => $request->measurement_date,
-            'status'             => $status, // Hasil hitung otomatis kamu
+            'child_id' => $request->child_id,
+            'weight' => $request->weight,
+            'height' => $request->height,
+            'measurement_date' => $request->measurement_date,
+            'status' => $status, // Hasil hitung otomatis kamu
 
             // Tambahan Kolom Baru:
             'head_circumference' => $request->head_circumference,
-            'arm_circumference'  => $request->arm_circumference,
-            'vitamin_a'          => $request->vitamin_a,
+            'arm_circumference' => $request->arm_circumference,
+            'vitamin_a' => $request->vitamin_a,
             'deworming_medicine' => $request->deworming_medicine,
-            'pmt_status'         => $request->pmt_status,
-            'notes'              => $request->notes,
+            'pmt_status' => $request->pmt_status,
+            'notes' => $request->notes,
         ]);
 
         // 5. Kembali ke Halaman Sebelumnya
@@ -112,7 +113,7 @@ class MeasurementController extends Controller
             ->where('age_month', $age)
             ->first();
 
-        if (!$std) {
+        if (! $std) {
             return 'Data Standar Tidak Ditemukan';
         }
 
@@ -158,6 +159,7 @@ class MeasurementController extends Controller
     {
         //
     }
+
     public function getChartData($child_id)
     {
         // Ambil data anak beserta riwayat timbangannya
@@ -171,32 +173,32 @@ class MeasurementController extends Controller
 
         $dataUntukTabel = $measurements->map(function ($m) use ($child) {
             // LOGIKA HITUNG UMUR: (Tanggal Timbang - Tanggal Lahir)
-            $birthDate = \Carbon\Carbon::parse($child->birth_date);
-            $checkDate = \Carbon\Carbon::parse($m->measurement_date);
+            $birthDate = Carbon::parse($child->birth_date);
+            $checkDate = Carbon::parse($m->measurement_date);
 
             // diffInMonths memberikan selisih bulan secara akurat
             $ageInMonths = floor($birthDate->diffInMonths($checkDate));
 
             return [
                 'formatted_date' => $checkDate->translatedFormat('d F Y'),
-                'age'            => $ageInMonths . ' Bulan', // Hasil hitung otomatis
-                'child_name'     => $child->name,
-                'weight'         => $m->weight,
-                'height'         => $m->height,
+                'age' => $ageInMonths.' Bulan', // Hasil hitung otomatis
+                'child_name' => $child->name,
+                'weight' => $m->weight,
+                'height' => $m->height,
                 'head_circumference' => $m->head_circumference,
-                'arm_circumference'  => $m->arm_circumference,
-                'vitamin_a'          => $m->vitamin_a,
+                'arm_circumference' => $m->arm_circumference,
+                'vitamin_a' => $m->vitamin_a,
                 'deworming_medicine' => $m->deworming_medicine,
-                'pmt_status'         => $m->pmt_status,
-                'status'         => $m->status
+                'pmt_status' => $m->pmt_status,
+                'status' => $m->status,
             ];
         });
 
         return response()->json([
-            'labels'       => $measurements->pluck('measurement_date')->map(fn($d) => \Carbon\Carbon::parse($d)->format('d/m/y')),
-            'weights'      => $measurements->pluck('weight'),
-            'heights'      => $measurements->pluck('height'),
-            'measurements' => $dataUntukTabel
+            'labels' => $measurements->pluck('measurement_date')->map(fn ($d) => Carbon::parse($d)->format('d/m/y')),
+            'weights' => $measurements->pluck('weight'),
+            'heights' => $measurements->pluck('height'),
+            'measurements' => $dataUntukTabel,
         ]);
     }
 
@@ -219,10 +221,11 @@ class MeasurementController extends Controller
             'child' => $child,
             'measurements' => $measurements,
             'chartImage' => $chartImage, // Kirim ke view
-            'date' => now()->format('d/m/Y')
+            'date' => now()->format('d/m/Y'),
         ];
 
         $pdf = Pdf::loadView('measurements.pdf', $data);
-        return $pdf->download('Laporan_' . $child->name . '.pdf');
+
+        return $pdf->download('Laporan_'.$child->name.'.pdf');
     }
 }

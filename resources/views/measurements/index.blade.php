@@ -133,7 +133,7 @@
                             <th class="p-2 text-center">LiLA</th>
                             <th class="p-2 text-center">Intervensi Tambahan</th>
 
-                            <th class="p-2 text-center">Status Gizi</th>
+                            <th class="p-2 text-center">Status Berat Badan (BB/U)</th>
                         </tr>
                     </thead>
                     <tbody id="measurement-table-body">
@@ -206,6 +206,11 @@
             }
         });
 
+        const normalWeightStatus = @json(\App\Models\Measurement::STATUS_NORMAL);
+        const underweightStatus = @json(\App\Models\Measurement::STATUS_UNDERWEIGHT);
+        const severeUnderweightStatus = @json(\App\Models\Measurement::STATUS_SEVERE_UNDERWEIGHT);
+        const overweightRiskStatus = @json(\App\Models\Measurement::STATUS_OVERWEIGHT_RISK);
+
         // 2. Logika saat Dropdown Berubah (Update Chart & Aktifkan Tombol)
         childSelect.addEventListener('change', function() {
             const childId = this.value;
@@ -230,12 +235,12 @@
 
                         if (data.measurements.length > 0) {
                             data.measurements.forEach((m) => {
-                                // Tentukan warna badge status gizi
+                                // Tentukan warna badge status berat badan (BB/U).
                                 let badgeClass = 'bg-yellow-500';
-                                if (m.status === 'Gizi Baik (Normal)') badgeClass =
-                                    'bg-green-600';
-                                else if (m.status === 'Gizi Kurang') badgeClass =
-                                    'bg-red-600';
+                                if (m.status === normalWeightStatus) badgeClass = 'bg-green-600';
+                                else if (m.status === underweightStatus) badgeClass = 'bg-amber-600';
+                                else if (m.status === severeUnderweightStatus) badgeClass = 'bg-red-700';
+                                else if (m.status === overweightRiskStatus) badgeClass = 'bg-blue-600';
 
                                 // --- LOGIKA PROGRAM INTERVENSI (Dinamis JavaScript) ---
                                 let intervensiHTML = '<div class="space-y-1 text-xs">';
@@ -279,7 +284,7 @@
                                 
                                 <td class="p-2">
                                     <span class="px-2 py-1 rounded text-white text-[10px] md:text-xs font-bold ${badgeClass}">
-                                        ${m.status}
+                                        ${m.status || 'Belum terklasifikasi'}
                                     </span>
                                 </td>
                             </tr>

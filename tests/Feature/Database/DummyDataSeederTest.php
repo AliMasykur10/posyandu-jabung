@@ -25,7 +25,7 @@ class DummyDataSeederTest extends TestCase
             ['name' => 'Posyandu Kenanga', 'address' => 'Alamat manual Kenanga'],
             ['name' => 'Posyandu Dahlia', 'address' => 'Alamat manual Dahlia'],
             ['name' => 'Posyandu Anggrek', 'address' => 'Alamat manual Anggrek'],
-        ])->map(fn(array $attributes) => Posyandu::create($attributes));
+        ])->map(fn (array $attributes) => Posyandu::create($attributes));
 
         $this->seed(DummyDataSeeder::class);
 
@@ -54,7 +54,7 @@ class DummyDataSeederTest extends TestCase
         $this->assertSame(50, ParentDetail::count());
         $this->assertSame(75, Child::count());
         $this->assertSame(435, Measurement::count());
-        $this->assertSame(26, NutritionStandard::count());
+        $this->assertSame(46, NutritionStandard::count());
 
         $this->assertSame(1, User::where('role', 'admin')->count());
         $this->assertSame(1, User::where('role', 'bidan')->count());

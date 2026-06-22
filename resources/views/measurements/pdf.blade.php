@@ -122,7 +122,7 @@
                 <th>L. Kepala</th>
                 <th>LiLA</th>
                 <th>Intervensi Tambahan</th>
-                <th>Status Gizi</th>
+                <th>Status Berat Badan (BB/U)</th>
             </tr>
         </thead>
         <tbody>

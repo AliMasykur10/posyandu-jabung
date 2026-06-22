@@ -32,7 +32,7 @@
                             <h3 class="text-xl font-semibold text-gray-900">{{ $child->name }}</h3>
                             <p class="text-sm text-gray-500">Usia {{ $years > 0 ? $years . ' tahun ' : '' }}{{ $months }} bulan</p>
                         </div>
-                        <span class="w-fit rounded-md px-3 py-1 text-sm font-semibold {{ $statusColor }}">{{ $status ?? 'Belum ada status gizi' }}</span>
+                        <span class="w-fit rounded-md px-3 py-1 text-sm font-semibold {{ $statusColor }}">{{ $status ?? 'Belum ada status berat badan' }}</span>
                     </div>
 
                     <div class="grid grid-cols-2 border-b border-gray-200 sm:grid-cols-4">

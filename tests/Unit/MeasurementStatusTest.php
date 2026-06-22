@@ -7,6 +7,14 @@ use PHPUnit\Framework\TestCase;
 
 class MeasurementStatusTest extends TestCase
 {
+    public function test_weight_status_labels_use_weight_for_age_terminology(): void
+    {
+        $this->assertSame('Berat Badan Normal', Measurement::STATUS_NORMAL);
+        $this->assertSame('Berat Badan Kurang', Measurement::STATUS_UNDERWEIGHT);
+        $this->assertSame('Berat Badan Sangat Kurang', Measurement::STATUS_SEVERE_UNDERWEIGHT);
+        $this->assertSame('Risiko Berat Badan Lebih', Measurement::STATUS_OVERWEIGHT_RISK);
+    }
+
     public function test_it_normalizes_legacy_nutrition_status_labels(): void
     {
         $this->assertSame(

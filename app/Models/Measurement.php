@@ -6,13 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Measurement extends Model
 {
-    public const STATUS_NORMAL = 'Gizi Baik (Normal)';
+    public const STATUS_NORMAL = 'Berat Badan Normal';
 
-    public const STATUS_UNDERWEIGHT = 'Gizi Kurang';
+    public const STATUS_UNDERWEIGHT = 'Berat Badan Kurang';
 
-    public const STATUS_SEVERE_UNDERWEIGHT = 'Gizi Buruk';
+    public const STATUS_SEVERE_UNDERWEIGHT = 'Berat Badan Sangat Kurang';
 
-    public const STATUS_OVERWEIGHT_RISK = 'Risiko Berat Lebih';
+    public const STATUS_OVERWEIGHT_RISK = 'Risiko Berat Badan Lebih';
 
     protected $fillable = [
         'child_id',
@@ -25,7 +25,7 @@ class Measurement extends Model
         'pmt_status',
         'status',
         'measurement_date',
-        'notes'
+        'notes',
     ];
 
     // Relasi: Setiap pengukuran milik satu anak

@@ -53,13 +53,13 @@
 
             <section class="grid grid-cols-1 gap-6 px-4 sm:px-0 lg:grid-cols-5">
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
-                    <h3 class="font-semibold text-gray-900">Status Gizi Bulan Ini</h3>
+                    <h3 class="font-semibold text-gray-900">Status Berat Badan (BB/U) Bulan Ini</h3>
                     <p class="mb-4 text-sm text-gray-500">Pengukuran terbaru dari setiap balita</p>
                     <div class="mx-auto h-72 max-w-sm"><canvas id="statusChart"></canvas></div>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm lg:col-span-3">
                     <h3 class="font-semibold text-gray-900">Tren Enam Bulan</h3>
-                    <p class="mb-4 text-sm text-gray-500">Jumlah balita per status gizi setiap bulan</p>
+                    <p class="mb-4 text-sm text-gray-500">Jumlah balita per status berat badan setiap bulan</p>
                     <div class="h-72"><canvas id="trendChart"></canvas></div>
                 </div>
             </section>
@@ -104,7 +104,7 @@
             <section class="overflow-hidden border-y border-gray-200 bg-white sm:rounded-lg sm:border">
                 <div class="border-b border-gray-200 px-4 py-4 sm:px-6">
                     <h3 class="font-semibold text-gray-900">Balita Perlu Perhatian</h3>
-                    <p class="text-sm text-gray-500">Status gizi kurang atau buruk berdasarkan pengukuran terakhir bulan ini</p>
+                    <p class="text-sm text-gray-500">Berat badan kurang atau sangat kurang berdasarkan pengukuran terakhir bulan ini</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -120,7 +120,7 @@
                                     <td class="px-6 py-4 font-semibold {{ \App\Models\Measurement::normalizeStatus($measurement->status) === \App\Models\Measurement::STATUS_SEVERE_UNDERWEIGHT ? 'text-red-700' : 'text-amber-700' }}">{{ \App\Models\Measurement::normalizeStatus($measurement->status) }}</td>
                                 </tr>
                             @empty
-                                <tr><td class="px-6 py-8 text-center text-gray-500" colspan="4">Tidak ada balita berstatus gizi kurang atau buruk bulan ini.</td></tr>
+                                <tr><td class="px-6 py-8 text-center text-gray-500" colspan="4">Tidak ada balita dengan berat badan kurang atau sangat kurang bulan ini.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -134,7 +134,7 @@
             new Chart(document.getElementById('statusChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Gizi Baik', 'Gizi Kurang', 'Gizi Buruk', 'Risiko Berat Lebih', 'Belum Terklasifikasi'],
+                    labels: ['BB Normal', 'BB Kurang', 'BB Sangat Kurang', 'Risiko BB Lebih', 'Belum Terklasifikasi'],
                     datasets: [{
                         data: @json(array_values($statusSummary)),
                         backgroundColor: ['#16a34a', '#d97706', '#dc2626', '#2563eb', '#9ca3af'],
@@ -149,10 +149,10 @@
                 data: {
                     labels: @json($trend['labels']),
                     datasets: [
-                        { label: 'Gizi Baik', data: @json($trend['normal']), borderColor: '#16a34a', backgroundColor: '#16a34a', tension: 0.25 },
-                        { label: 'Gizi Kurang', data: @json($trend['underweight']), borderColor: '#d97706', backgroundColor: '#d97706', tension: 0.25 },
-                        { label: 'Gizi Buruk', data: @json($trend['severeUnderweight']), borderColor: '#dc2626', backgroundColor: '#dc2626', tension: 0.25 },
-                        { label: 'Risiko Berat Lebih', data: @json($trend['overweightRisk']), borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.25 }
+                        { label: 'BB Normal', data: @json($trend['normal']), borderColor: '#16a34a', backgroundColor: '#16a34a', tension: 0.25 },
+                        { label: 'BB Kurang', data: @json($trend['underweight']), borderColor: '#d97706', backgroundColor: '#d97706', tension: 0.25 },
+                        { label: 'BB Sangat Kurang', data: @json($trend['severeUnderweight']), borderColor: '#dc2626', backgroundColor: '#dc2626', tension: 0.25 },
+                        { label: 'Risiko BB Lebih', data: @json($trend['overweightRisk']), borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.25 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
